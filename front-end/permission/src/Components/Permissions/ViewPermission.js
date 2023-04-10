@@ -25,7 +25,7 @@ const ViewPermission = () => {
 
 
     const navigate=useNavigate();
-    const API_BASE_URL = "https://localhost:7121/api/Permisions"
+    const API_BASE_URL = "http://api-backend/api/Permisions"
 
     return(
         <div>

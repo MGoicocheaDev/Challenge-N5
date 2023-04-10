@@ -3,7 +3,7 @@ import axios from "axios";
 
 const SelectPermission = ({valuePermissionSelected, getPermissionSelected}) => {
     const [permissionListData, permissionListDataChange] = useState(null);
-    const API_BASE_URL = "https://localhost:7121/api/PermissionTypes"
+    const API_BASE_URL = "http://localhost:8098/api/PermissionTypes"
 
     useEffect(() => {
         axios.get(API_BASE_URL).then((response) => {

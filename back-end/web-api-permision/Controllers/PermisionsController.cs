@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using web_api_lib_application.Infraestructure.Commands;
 using web_api_lib_application.Infraestructure.Queries;
@@ -7,6 +8,7 @@ using web_api_lib_application.Logic.Dtos;
 namespace web_api_permision.Controllers
 {
     [Route("api/[controller]")]
+    [DisableCors]
     [ApiController]
     public class PermisionsController : ControllerBase
     {
