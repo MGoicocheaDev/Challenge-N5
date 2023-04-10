@@ -1,9 +1,8 @@
 ﻿using MediatR;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using web_api_lib_application.Infraestructure.Commands;
 using web_api_lib_application.Infraestructure.Queries;
-using web_api_lib_data.Models;
+using web_api_lib_application.Logic.Dtos;
 
 namespace web_api_permision.Controllers
 {
@@ -25,7 +24,7 @@ namespace web_api_permision.Controllers
         /// <returns></returns>
 
         [HttpGet]
-        public async Task<IEnumerable<Permission>> GetAll()
+        public async Task<IEnumerable<PermissionDto>> GetAll()
         {
             return await _mediator.Send(new GetAllPermissionTaskQuery());
         }
@@ -37,7 +36,7 @@ namespace web_api_permision.Controllers
 
         [HttpGet]
         [Route("{id}")]
-        public async Task<Permission> Get(int id)
+        public async Task<PermissionDto> Get(int id)
         {
             return await _mediator.Send(new GetAllPermissionByIdTaskQuery(id));
         }
@@ -48,7 +47,7 @@ namespace web_api_permision.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpPut]
-        public async Task<ActionResult<Permission>> Put(UpdateTaskCommand command)
+        public async Task<ActionResult<PermissionDto>> Put(UpdateTaskCommand command)
         {
             var request = await _mediator.Send(command);
             return Ok(request);
@@ -59,7 +58,7 @@ namespace web_api_permision.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpPost]
-        public async Task<ActionResult<Permission>> Post(CreateTaskCommand command)
+        public async Task<ActionResult<PermissionDto>> Post(CreateTaskCommand command)
         {
             var request = await _mediator.Send(command);
             return Ok(request);

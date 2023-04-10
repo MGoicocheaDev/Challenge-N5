@@ -5,12 +5,13 @@ using Nest;
 using Newtonsoft.Json;
 using web_api_lib_application.Infraestructure.Commands;
 using web_api_lib_application.Infraestructure.UnitOfWork;
+using web_api_lib_application.Logic.Dtos;
 using web_api_lib_application.Logic.KafkaEvent;
 using web_api_lib_data.Models;
 
 namespace web_api_lib_application.Logic.Handlers
 {
-    public class UpdateTaskHandler : IRequestHandler<UpdateTaskCommand, Permission>
+    public class UpdateTaskHandler : IRequestHandler<UpdateTaskCommand, PermissionDto>
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IElasticClient _elasticClient;
@@ -27,7 +28,7 @@ namespace web_api_lib_application.Logic.Handlers
             _config = config;
         }
 
-        public async Task<Permission> Handle(UpdateTaskCommand request, CancellationToken cancellationToken)
+        public async Task<PermissionDto> Handle(UpdateTaskCommand request, CancellationToken cancellationToken)
         {
 
             var permission = await _unitOfWork.PermissionRepository.FindByIdAsync(request.id);
@@ -50,8 +51,15 @@ namespace web_api_lib_application.Logic.Handlers
             var topic = _config.GetSection("TopicName").Value;
 
             await KafkaProducer.SendMessage(_configuration, topic, kafkaMessage);
-
-            return permission;
+            return new PermissionDto
+            {
+                NombreEmpleado = permission.NombreEmpleado,
+                ApellidoEmpleado = permission.ApellidoEmpleado,
+                Id = permission.Id,
+                FechaPermiso = permission.FechaPermiso,
+                PermissionTypeId = permissionType.Id,
+                PermissionTypeName = permissionType.Descripcion
+            };
 
         }
     }

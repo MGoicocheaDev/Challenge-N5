@@ -6,12 +6,13 @@ using Newtonsoft.Json;
 using System.Security;
 using web_api_lib_application.Infraestructure.Queries;
 using web_api_lib_application.Infraestructure.UnitOfWork;
+using web_api_lib_application.Logic.Dtos;
 using web_api_lib_application.Logic.KafkaEvent;
 using web_api_lib_data.Models;
 
 namespace web_api_lib_application.Logic.Handlers
 {
-    public class GetPermissionByIdTaskHandler : IRequestHandler<GetAllPermissionByIdTaskQuery, Permission>
+    public class GetPermissionByIdTaskHandler : IRequestHandler<GetAllPermissionByIdTaskQuery, PermissionDto>
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IElasticClient _elasticClient;
@@ -27,9 +28,9 @@ namespace web_api_lib_application.Logic.Handlers
             _configuration = configuration;
             _config = config;
         }
-        public async Task<Permission> Handle(GetAllPermissionByIdTaskQuery request, CancellationToken cancellationToken)
+        public async Task<PermissionDto> Handle(GetAllPermissionByIdTaskQuery request, CancellationToken cancellationToken)
         {
-            var permission = await _unitOfWork.PermissionRepository.FindByIdAsync(request.Id); 
+            var permission = await _unitOfWork.PermissionRepository.FindByIdAsync(request.Id);
             //Save in Elastic
             await _elasticClient.IndexDocumentAsync(permission);
 
@@ -40,6 +41,15 @@ namespace web_api_lib_application.Logic.Handlers
 
             await KafkaProducer.SendMessage(_configuration, topic, kafkaMessage);
 
-            return permission;        }
+            return new PermissionDto
+            {
+                Id = permission.Id,
+                NombreEmpleado = permission.NombreEmpleado,
+                ApellidoEmpleado = permission.ApellidoEmpleado,
+                FechaPermiso = permission.FechaPermiso,
+                PermissionTypeId = permission.PermissionTypes.Id,
+                PermissionTypeName = permission.PermissionTypes.Descripcion
+            };
+        }
     }
 }

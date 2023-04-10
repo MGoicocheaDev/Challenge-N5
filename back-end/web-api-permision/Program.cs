@@ -51,6 +51,12 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+app.UseCors( x => 
+    x.AllowAnyMethod()
+    .AllowAnyOrigin()
+    .AllowAnyHeader()
+ );
+
 
 //Create Db if not exist
 using var scope = app.Services.CreateScope();

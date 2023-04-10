@@ -44,7 +44,7 @@ services:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker-1:9092,PLAINTEXT_INTERNAL://broker:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://broker:29092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
@@ -53,31 +53,31 @@ services:
     ports:
       - "9092:9092"
 
-  sql:
-    image: "mcr.microsoft.com/mssql/server:2022-latest"
-    container_name: sql_server2022
-    ports: # not actually needed, because the two services are on the same network.
-      - "1433:1433" 
-    environment:
-      - ACCEPT_EULA=y
-      - SA_PASSWORD=A&VeryComplex123Password
-    networks:
-      - es-net
+  # sql:
+  #   image: "mcr.microsoft.com/mssql/server:2022-latest"
+  #   container_name: sql_server2022
+  #   ports: # not actually needed, because the two services are on the same network.
+  #     - "1433:1433" 
+  #   environment:
+  #     - ACCEPT_EULA=y
+  #     - SA_PASSWORD=A&VeryComplex123Password
+  #   networks:
+  #     - es-net
 
-  web-api-permission:
-    image: web-api-permission
-    container_name: web-api-permission
-    build:
-      context: .\back-end\
-      dockerfile: web-api-permision\Dockerfile
-    ports:
-      - "8098:80"
-    environment:
-      ASPNETCORE_ENVIRONMENT: Development
-    networks:
-      - es-net
-    depends_on:
-      - sql
+  # web-api-permission:
+  #   image: web-api-permission
+  #   container_name: web-api-permission
+  #   build:
+  #     context: .\back-end\
+  #     dockerfile: web-api-permision\Dockerfile
+  #   ports:
+  #     - "8098:80"
+  #   environment:
+  #     ASPNETCORE_ENVIRONMENT: Development
+  #   networks:
+  #     - es-net
+  #   depends_on:
+  #     - sql
 
 networks:
   es-net:
