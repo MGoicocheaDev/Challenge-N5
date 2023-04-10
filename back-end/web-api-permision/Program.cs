@@ -9,7 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 /// ConnectionString
 var connectionString = builder.Configuration.GetConnectionString("webApiConnectionString") ?? throw new InvalidOperationException("Connection string 'webApiConnectionString' not found.");
-
+var MyAllowCorsforReactApp = "_myAllowCorsforReactApp";
 //MediatR
 builder.Services.AddMediatR(typeof(web_api_lib_application.Logic.Handlers.CreateTaskHandler).Assembly);
 
@@ -30,10 +30,23 @@ builder.Services.AddTransient<IUnitOfWork, UnitOfWork>();
 
 builder.Services.AddElasticsearch(builder.Configuration);
 
+
 var producerConfiguration = new ProducerConfig();
 builder.Configuration.Bind("producerconfiguration", producerConfiguration);
 
 builder.Services.AddSingleton<ProducerConfig>(producerConfiguration);
+
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(MyAllowCorsforReactApp,
+                          policy =>
+                          {
+                              policy.WithOrigins("http://localhost:3000")
+                                                  .AllowAnyHeader()
+                                                  .AllowAnyMethod();
+                          });
+});
 
 
 var app = builder.Build();
@@ -51,11 +64,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.UseCors( x => 
-    x.AllowAnyMethod()
-    .AllowAnyOrigin()
-    .AllowAnyHeader()
- );
+app.UseCors(MyAllowCorsforReactApp );
 
 
 //Create Db if not exist

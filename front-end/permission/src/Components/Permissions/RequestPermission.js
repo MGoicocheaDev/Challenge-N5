@@ -10,7 +10,7 @@ const RequestPermission = () =>{
     const[permissionTypeId,permissionidtypechange]=useState(1);
 
     const navigate=useNavigate();
-    const API_BASE_URL = "http://api-backend/api/Permisions"
+    const API_BASE_URL = "http://localhost:8098/api/Permisions"
 
     const handlesubmit=(e)=>{
         e.preventDefault();
