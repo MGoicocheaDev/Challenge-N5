@@ -15,11 +15,11 @@ namespace web_api_lib_application.Logic.Handlers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IElasticClient _elasticClient;
-        private readonly ProducerConfig _configuration;
+        private readonly IProducer<Null, string> _configuration;
         private readonly IConfiguration _config;
         public UpdateTaskHandler(IUnitOfWork unitOfWork,
               IElasticClient elasticClient,
-            ProducerConfig configuration,
+            IProducer<Null, string> configuration,
             IConfiguration config)
         {
             _unitOfWork = unitOfWork; 
@@ -30,7 +30,29 @@ namespace web_api_lib_application.Logic.Handlers
 
         public async Task<PermissionDto> Handle(UpdateTaskCommand request, CancellationToken cancellationToken)
         {
+            //Update permission
+            var resultUpdatePermission = await UpdatePermission(request);
 
+            //Save in Elastic
+            await _elasticClient.IndexDocumentAsync(resultUpdatePermission);
+
+            // Send to Kafka
+            await KafkaProducer.SendMessage(_configuration, _config, "modify");
+
+            // return process
+            return new PermissionDto
+            {
+                NombreEmpleado = resultUpdatePermission.NombreEmpleado,
+                ApellidoEmpleado = resultUpdatePermission.ApellidoEmpleado,
+                Id = resultUpdatePermission.Id,
+                FechaPermiso = resultUpdatePermission.FechaPermiso,
+                PermissionTypeId = resultUpdatePermission.PermissionTypes.Id,
+                PermissionTypeName = resultUpdatePermission.PermissionTypes.Descripcion
+            };
+        }
+
+        private async Task<Permission> UpdatePermission(UpdateTaskCommand request)
+        {
             var permission = await _unitOfWork.PermissionRepository.FindByIdAsync(request.id);
             var permissionType = await _unitOfWork.PermissionTypeRepository.FindByIdAsync(request.permissionTypeId);
 
@@ -42,25 +64,7 @@ namespace web_api_lib_application.Logic.Handlers
             _unitOfWork.PermissionRepository.Update(permission);
             await _unitOfWork.CompleteAsync();
 
-            //Save in Elastic
-            await _elasticClient.IndexDocumentAsync(permission);
-
-            // Send to Kafka
-
-            var kafkaMessage = JsonConvert.SerializeObject(new { Id = Guid.NewGuid(), Operation = "modify" });
-            var topic = _config.GetSection("TopicName").Value;
-
-            await KafkaProducer.SendMessage(_configuration, topic, kafkaMessage);
-            return new PermissionDto
-            {
-                NombreEmpleado = permission.NombreEmpleado,
-                ApellidoEmpleado = permission.ApellidoEmpleado,
-                Id = permission.Id,
-                FechaPermiso = permission.FechaPermiso,
-                PermissionTypeId = permissionType.Id,
-                PermissionTypeName = permissionType.Descripcion
-            };
-
+            return permission;
         }
     }
 }

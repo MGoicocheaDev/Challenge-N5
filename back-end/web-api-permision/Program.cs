@@ -33,8 +33,9 @@ builder.Services.AddElasticsearch(builder.Configuration);
 
 var producerConfiguration = new ProducerConfig();
 builder.Configuration.Bind("producerconfiguration", producerConfiguration);
+IProducer<Null, string> producerKafka = new ProducerBuilder<Null, string>(producerConfiguration).Build();
 
-builder.Services.AddSingleton<ProducerConfig>(producerConfiguration);
+builder.Services.AddSingleton<ProducerBuilder<Null,string>>(producerKafka);
 
 
 builder.Services.AddCors(options =>

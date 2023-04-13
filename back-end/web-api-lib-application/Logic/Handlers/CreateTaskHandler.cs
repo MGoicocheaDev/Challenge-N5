@@ -16,11 +16,11 @@ namespace web_api_lib_application.Logic.Handlers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IElasticClient _elasticClient;
-        private readonly ProducerConfig _configuration;
+        private readonly IProducer<Null, string> _configuration;
         private readonly IConfiguration _config;
         public CreateTaskHandler(IUnitOfWork unitOfWork,
             IElasticClient elasticClient,
-            ProducerConfig configuration,
+            IProducer<Null, string> configuration,
             IConfiguration config)
         {
             _unitOfWork = unitOfWork;
@@ -30,6 +30,28 @@ namespace web_api_lib_application.Logic.Handlers
         }
 
         public async Task<PermissionDto> Handle(CreateTaskCommand request, CancellationToken cancellationToken)
+        {
+            // Save Request
+            var resultSavePermission =await SaveNewRequest(request);
+
+            //Save in Elastic
+            await _elasticClient.IndexDocumentAsync(resultSavePermission);
+            // Send to Kafka
+            await KafkaProducer.SendMessage(_configuration, _config, "request");
+
+            // return process
+            return new PermissionDto
+            {
+                NombreEmpleado = resultSavePermission.NombreEmpleado,
+                ApellidoEmpleado = resultSavePermission.ApellidoEmpleado,
+                Id = resultSavePermission.Id,
+                FechaPermiso = resultSavePermission.FechaPermiso ,
+                PermissionTypeId = resultSavePermission.PermissionTypes.Id,
+                PermissionTypeName = resultSavePermission.PermissionTypes.Descripcion
+            };
+        }
+
+        private async Task<Permission> SaveNewRequest(CreateTaskCommand request)
         {
             var permissionType = await _unitOfWork.PermissionTypeRepository.FindByIdAsync(request.permissionTypeId);
 
@@ -45,24 +67,7 @@ namespace web_api_lib_application.Logic.Handlers
 
             await _unitOfWork.CompleteAsync();
 
-            //Save in Elastic
-            await _elasticClient.IndexDocumentAsync(permission);
-            // Send to Kafka
-
-            var kafkaMessage = JsonConvert.SerializeObject(new { Id = Guid.NewGuid(), Operation = "request" });
-            var topic = _config.GetSection("TopicName").Value;
-
-            await KafkaProducer.SendMessage(_configuration, topic, kafkaMessage);
-
-            return new PermissionDto
-            {
-                NombreEmpleado = permission.NombreEmpleado,
-                ApellidoEmpleado = permission.ApellidoEmpleado,
-                Id = permission.Id,
-                FechaPermiso = permission.FechaPermiso ,
-                PermissionTypeId = permissionType.Id,
-                PermissionTypeName = permissionType.Descripcion
-            };
+            return permission;
         }
     }
 }
