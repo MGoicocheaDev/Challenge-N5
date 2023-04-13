@@ -9,21 +9,21 @@ using web_api_lib_data.Models;
 
 namespace web_api_test.Commands
 {
-    public class CreateTaskCommandHandlerTests
+    public class UpdateTaskCommandHandlerTests
     {
         private readonly Mock<IUnitOfWork> _unitOfWorkMock;
         private readonly Mock<IElasticClient> _elasticClientMock;
         private readonly Mock<IProducer<Null, string>> _producerMock;
 
-        public CreateTaskCommandHandlerTests()
+        public UpdateTaskCommandHandlerTests()
         {
             _unitOfWorkMock = new();
-            _elasticClientMock = new ();
-            _producerMock = new ();
+            _elasticClientMock = new();
+            _producerMock = new();
         }
 
         [Test]
-        public async Task Handler_Should_CreatePermission()
+        public async Task Handler_Should_UpdatePermission()
         {
             var inMemorySettings = new Dictionary<string, string> {
                 {"TopicName", "permission"}
@@ -33,24 +33,29 @@ namespace web_api_test.Commands
                 .AddInMemoryCollection(inMemorySettings)
                 .Build();
 
-            var command = new CreateTaskCommand("Manuel", "Goicochea", 1);
+            var command = new UpdateTaskCommand(1,"Manuel", "Goicochea", 2);
             var produce = _producerMock.Object;
+
+            _unitOfWorkMock.Setup(x =>
+                x.PermissionRepository.FindByIdAsync(It.IsAny<object>()))
+                .ReturnsAsync(new Permission { Id = 1, NombreEmpleado = "Manuel", ApellidoEmpleado = "Goicochea", PermissionTypes = new PermissionType { Id = 1, Descripcion = "Read" } });
+
             _unitOfWorkMock.Setup(x =>
                 x.PermissionTypeRepository.FindByIdAsync(It.IsAny<object>()))
-                .ReturnsAsync(new web_api_lib_data.Models.PermissionType { Id = 1, Descripcion = "Read" });
+                .ReturnsAsync(new PermissionType { Id = 2, Descripcion = "Read|Write" });
 
-            _unitOfWorkMock.Setup(x =>
-                x.PermissionRepository.AddAsync(It.IsAny<Permission>()))
-                .Callback<Permission>(permission =>
-                {
-                    permission.Id = 1;
-                    permission.FechaPermiso = DateTime.Now;
-                });
+            //_unitOfWorkMock.Setup(x =>
+            //    x.PermissionRepository.Update(It.IsAny<Permission>()))
+            //    .Callback<Permission>(permission =>
+            //    {
+            //        permission.Id = 1;
+            //        permission.FechaPermiso = DateTime.Now;
+            //    });
 
-            var handler = new CreateTaskHandler(_unitOfWorkMock.Object, _elasticClientMock.Object, produce, configuration);
+            var handler = new UpdateTaskHandler(_unitOfWorkMock.Object, _elasticClientMock.Object, produce, configuration);
 
 
-            
+
             int produceCount = 0;
             int flushCount = 0;
             _producerMock.Setup(x => x.Produce(It.IsAny<string>(), It.IsAny<Message<Null, string>>(), It.IsAny<Action<DeliveryReport<Null, string>>>()))
@@ -74,7 +79,7 @@ namespace web_api_test.Commands
 
             var result = await handler.Handle(command, default);
 
-            _unitOfWorkMock.Verify(x => x.PermissionRepository.AddAsync(It.Is<Permission>(mbox => mbox.Id == result.Id)), Times.Once);
+            _unitOfWorkMock.Verify(x => x.PermissionRepository.Update(It.Is<Permission>(mbox => mbox.Id == result.Id)), Times.Once);
 
 
             Assert.IsNotNull(result);

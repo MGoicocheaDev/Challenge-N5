@@ -14,12 +14,12 @@ namespace web_api_test.Queries
     {
         private readonly Mock<IUnitOfWork> _unitOfWorkMock;
         private readonly Mock<IElasticClient> _elasticClientMock;
-        private readonly Mock<ProducerConfig> _producerConfigMock;
+        private readonly Mock<IProducer<Null, string>> _producerMock;
         public GetPermissionTaskHandlerTest()
         {
             _unitOfWorkMock = new();
             _elasticClientMock = new();
-            _producerConfigMock = new();
+            _producerMock = new();
         }
 
         [Test]
@@ -76,10 +76,11 @@ namespace web_api_test.Queries
                 .AddInMemoryCollection(inMemorySettings)
                 .Build();
 
+            var produce = _producerMock.Object;
             var queryPermission = new GetAllPermissionByIdTaskQuery(1);
             var handle = new GetPermissionByIdTaskHandler(_unitOfWorkMock.Object,
                 _elasticClientMock.Object,
-                _producerConfigMock.Object,
+                produce,
                 configuration);
 
             _unitOfWorkMock.Setup(x =>
@@ -97,9 +98,27 @@ namespace web_api_test.Queries
                    }
                });
 
-            /// Need to cread mock for Kafka component
-            //_producerConfigMock.Setup(x =>
-            //    x.)
+            int produceCount = 0;
+            int flushCount = 0;
+            _producerMock.Setup(x => x.Produce(It.IsAny<string>(), It.IsAny<Message<Null,string>>(), It.IsAny<Action<DeliveryReport<Null,string>>>()))
+                .Callback<string, Message<Null, string>, Action<DeliveryReport<Null, string>>>((topic, message,action) 
+                => {
+                    var result = new DeliveryReport<Null, string>
+                    {
+                        Topic = topic,
+                        Partition = 0,
+                        Offset = 0,
+                        Error = new Error(ErrorCode.NoError),
+                        Message = message,
+                    };
+
+                    action.Invoke(result);
+
+                    produceCount++;
+                });
+
+            _producerMock.Setup(x => x.Flush(It.IsAny<TimeSpan>())).Returns(0).Callback(() => flushCount++);
+            
 
             var result = await handle.Handle(queryPermission, default);
 
